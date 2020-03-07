@@ -64,44 +64,41 @@ for i = 1:1000 %which is the number of steps we want
     
     %calculate the angles of spherical coordinates of the local verctor
     %we've obtained
-%     zeta = atan2(sqrt(x_rel_local(1)^2+x_rel_local(2)^2),x_rel_local(3)); %synonymous to desired pitch
-%     eta = atan2(x_rel_local(2),x_rel_local(1)); %synonymous to desired yaw
+    zeta = atan2(x_rel_global(3),  sqrt(x_rel_global(1)^2+x_rel_global(2)^2));  %synonymous to desired pitch
+    eta = atan2(x_rel_global(2),x_rel_global(1)); %synonymous to desired yaw
     
-%     zeta = atan2(  sqrt(x_rel_global(1)^2+x_rel_global(2)^2)  ,x_rel_global(3)) %synonymous to desired pitch
-%     zeta = asin(x_rel_global(3)/norm(x_rel_global))
-    zeta = atan2(x_rel_global(3),  sqrt(x_rel_global(1)^2+x_rel_global(2)^2) )
-%     zeta = atan2(x_rel_global(3),x_rel_global(1))
-    eta = atan2(x_rel_global(2),x_rel_global(1)) %synonymous to desired yaw
-    ZETA(i)=zeta;
-    ETA(i) = eta;
-    
+    %based on spherical coordinates of the relative global vector, the x
+    %axis (front) of the satellite is pointed by rotating by angle eta
+    %around z axis and then angle -zeta around local y axis (notice that at
+    %the beginning the local and global z axes are the same)
     psi = eta;
     theta = -zeta;
     
-%     if eta > -pi/2 && eta <pi/2
-%         theta = -zeta;
-%     else
-%         theta = zeta;
-%     end
-%      theta   = 0
     %% This part is for animation only
     cla
+    %plotting trajectories
     fh = plot3(X_target(:,1),X_target(:,2),X_target(:,3));
     hold on
     plot3(X_orbit(:,1),X_orbit(:,2),X_orbit(:,3));
     plot3(X_target(i,1),X_target(i,2),X_target(i,3),'bo','MarkerSize',8,'MarkerFaceColor','b')
 % %     plot3(X_orbit(i,1),X_orbit(i,2),X_orbit(i,3),'ro','MarkerSize',8,'MarkerFaceColor','r')
+
+    %plotting lines
     line([X_orbit(i,1),X_target(i,1)],[X_orbit(i,2),X_target(i,2)],[X_orbit(i,3),X_target(i,3)],'Color','green')
-    line([0,x_rel_global(1)],[0,x_rel_global(2)],[0,x_rel_global(3)],'Color','m')
-    [X,Y,Z] = getTriangleVertices(X_orbit(i,:),[phi,theta,psi]);
-    patch(X,Y,Z,'red')
-    [X,Y,Z] = getTriangleVertices(X_orbit(i,:)*0,[phi,theta,psi]);
-    patch(X,Y,Z,'blue')
+%     line([0,x_rel_global(1)],[0,x_rel_global(2)],[0,x_rel_global(3)],'Color','m')
     a = [1500,0 0]';
     A = rotation(phi,theta,psi)*a;
     line([X_orbit(i,1),X_orbit(i,1)+A(1)],[X_orbit(i,2),X_orbit(i,2)+A(2)],[X_orbit(i,3),X_orbit(i,3)+A(3)],'Color','black')
+    
+    %plotting rigid bodies
+    [X,Y,Z] = getTriangleVertices(X_orbit(i,:),[phi,theta,psi]);
+    patch(X,Y,Z,'red')
+%     [X,Y,Z] = getTriangleVertices(X_orbit(i,:)*0,[phi,theta,psi]);
+%     patch(X,Y,Z,'blue')
 %     [X,Y,Z] = getTriangleVertices(X_orbit(i,:)*0,[phi,-0.8913,2.4438]);
 %     patch(X,Y,Z,'green')
+
+
     xlabel('X_0')
     ylabel('Y_0')
     zlabel('Z_0')
@@ -110,34 +107,6 @@ for i = 1:1000 %which is the number of steps we want
     drawnow
 %     pause(.1)
 end
-
-
-
-%% For testing purposes
-% figure(1)
-% fh = plot3(X_target(:,1),X_target(:,2),X_target(:,3));
-% hold on
-% plot3(X_orbit(:,1),X_orbit(:,2),X_orbit(:,3));
-% [X,Y,Z] = getTriangleVertices([0,0,0],[0,pi*0.,psi]);
-% patch(X,Y,Z,'red')
-% axis equal
-% 
-% for i = 1:size(X_target,1)    
-%     fh = plot3(X_target(:,1),X_target(:,2),X_target(:,3));
-%     hold on
-%     plot3(X_orbit(:,1),X_orbit(:,2),X_orbit(:,3));
-%     plot3(X_target(i,1),X_target(i,2),X_target(i,3),'bo','MarkerSize',8,'MarkerFaceColor','b')
-% %     plot3(X_orbit(i,1),X_orbit(i,2),X_orbit(i,3),'ro','MarkerSize',8,'MarkerFaceColor','r') %to draw a moving point
-%     line([X_orbit(i,1),X_target(i,1)],[X_orbit(i,2),X_target(i,2)],[X_orbit(i,3),X_target(i,3)],'Color','green')
-%     [X,Y,Z] = getTriangleVertices(X_orbit(i,:),[0,0,psi]);
-%     patch(X,Y,Z,'red') %to draw a moving triangle (rigid body)
-%     xlabel('X_0')
-%     ylabel('Y_0')
-%     zlabel('Z_0')
-%     drawnow
-%     cla
-% end
-
 
 %% 
 %this function follows a Z-Y-X rotation
@@ -148,8 +117,8 @@ Rx = [1 0 0;0 cos(phi) -sin(phi); 0 sin(phi) cos(phi)];
 Ry = [cos(theta) 0 sin(theta); 0 1 0; -sin(theta) 0 cos(theta) ];
 Rz = [cos(psi) -sin(psi) 0; sin(psi) cos(psi) 0; 0 0 1];
 
-% Rt = Rx * Ry* Rz; %target rotation matrix
-Rt = Rz * Ry * Rx;
+% Rt = Rx * Ry* Rz; %target rotation matrix (this is wrong)
+Rt = Rz * Ry * Rx;%target rotation matrix (this is the right one)
 end
 
 function [X, Y ,Z] = getTriangleVertices(pos,angle)
