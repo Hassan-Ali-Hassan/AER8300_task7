@@ -46,9 +46,10 @@ plot3(X_orbit(:,1),X_orbit(:,2),X_orbit(:,3));
 patch(X,Y,Z,'red')
 axis equal
 
+old_error = 0;
 
 for i = 1:2000 %which is the number of steps we want
-    i;
+    i
     %calculating the local coorddinates wrt curcular trajectory plane
     x_local_target = [r*cos(alpha) , r*sin(alpha), 0]';
     x_local_orbit = [R*cos(beta) , R*sin(beta), 0]';
@@ -104,7 +105,9 @@ for i = 1:2000 %which is the number of steps we want
     zeta_l = atan2(x_rel_local(3),  sqrt(x_rel_local(1)^2+x_rel_local(2)^2));  %synonymous to desired pitch
     eta_l = atan2(x_rel_local(2),x_rel_local(1)); %synonymous to desired yaw
     
-    ky = 50.0;
+    zeta_l * 180/pi;
+    
+    ky = 500.0*0;
     kiy = 0;
     
     kz = 235;
@@ -117,15 +120,22 @@ for i = 1:2000 %which is the number of steps we want
     if i > 1
 %         error_psi = 0 + eta_l;
 %         error_theta = 0 - zeta_l;
-        error_phi = 0 - phi;
-        phi*180/pi
+        
+        phi*180/pi;
+        
+        
         error_psi = psi_desired - psi
-        error_theta = theta_desired - theta
+        error_theta = theta_desired - theta;
+        error_phi = 0 - phi;
         
-        if abs(error_psi - ERROR_PSI(i-1)) > 1.2*pi
-            error_psi = ERROR_PSI(i-1);
+        psi_desired
+        psi
+        if abs(error_psi - old_error) > 1.9*pi
+            error_psi = old_error;
+        else
+            old_error = error_psi;
         end
-        
+        error_psi
         
         %integral errors
         error_phi_integral = error_phi_integral + error_phi * dt;
@@ -169,6 +179,24 @@ for i = 1:2000 %which is the number of steps we want
     theta = theta + d_theta * dt;
     psi = psi + d_psi * dt;
     
+    %saturation of angles
+    if psi > 2*pi
+        psi = psi - 2*pi;
+    elseif psi < -2*pi
+        psi = psi + 2*pi;
+    end
+    
+%     if psi > pi
+%         psi = psi - pi;
+%     elseif psi < -pi
+%         psi = psi + pi;
+%     end
+    
+    if psi < 0
+        if psi < -pi
+            psi = psi + 2*pi;
+        end
+    end
     THETA(i) = theta;
     PHI(i) = phi;
     PSI(i) = psi;
@@ -206,7 +234,7 @@ for i = 1:2000 %which is the number of steps we want
     ylabel('Y_0')
     zlabel('Z_0')
     axis([-1 1 -1 1 -1 1]*500)
-%     view(0,90)
+    view(0,90)
     drawnow
 %     pause(.1)
 end
