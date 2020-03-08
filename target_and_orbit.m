@@ -22,9 +22,20 @@ rot_target = rotation(0,1,0);
 rot_orbit = rotation(0, pi*0.5,0);
 
 %the euler angles of the satellite itself
-theta = -1;
-phi = -0.;
-psi =3.0;
+theta = 0;
+phi = 0.3;
+psi =0;
+
+%this is where we save euler angles
+PHI = 0;
+THETA = 0;
+PSI = 0;
+ERROR_PSI = 0;
+ERROR_THETA = 0;
+
+error_theta_integral = 0;
+error_psi_integral = 0;
+error_phi_integral = 0;
 
 %For demonstration
 figure(1)
@@ -35,8 +46,9 @@ plot3(X_orbit(:,1),X_orbit(:,2),X_orbit(:,3));
 patch(X,Y,Z,'red')
 axis equal
 
-for i = 1:1000 %which is the number of steps we want
-    
+
+for i = 1:2000 %which is the number of steps we want
+    i;
     %calculating the local coorddinates wrt curcular trajectory plane
     x_local_target = [r*cos(alpha) , r*sin(alpha), 0]';
     x_local_orbit = [R*cos(beta) , R*sin(beta), 0]';
@@ -71,38 +83,129 @@ for i = 1:1000 %which is the number of steps we want
     %axis (front) of the satellite is pointed by rotating by angle eta
     %around z axis and then angle -zeta around local y axis (notice that at
     %the beginning the local and global z axes are the same)
-    psi = eta;
-    theta = -zeta;
+    psi_desired = eta;
+    theta_desired = -zeta;
+    phi_desired = 0;
+    
+    %% The PID control part
+    %till now, there is no update for the satellite states (phi, theta,
+    %psi), only calculated desired values.
+    
+%     for that, we need dynamics, represented by the moments of intertias in (kg m^2)
+    Ixx = 10.42;
+    Iyy =  9.96;
+    Izz =  9.96;
+    
+    %calculating the moments that will rotate the satellite (using PID 
+    %controller)
+    %first we calculate the error .. start by calculating spherical axes
+    %angles from x_rel_local
+    
+    zeta_l = atan2(x_rel_local(3),  sqrt(x_rel_local(1)^2+x_rel_local(2)^2));  %synonymous to desired pitch
+    eta_l = atan2(x_rel_local(2),x_rel_local(1)); %synonymous to desired yaw
+    
+    ky = 50.0;
+    kiy = 0;
+    
+    kz = 235;
+    kiz = 0;
+    kdz = 0;
+    
+    kx = 800;
+    kix = 100;
+    
+    if i > 1
+%         error_psi = 0 + eta_l;
+%         error_theta = 0 - zeta_l;
+        error_phi = 0 - phi;
+        phi*180/pi
+        error_psi = psi_desired - psi
+        error_theta = theta_desired - theta
+        
+        if abs(error_psi - ERROR_PSI(i-1)) > 1.2*pi
+            error_psi = ERROR_PSI(i-1);
+        end
+        
+        
+        %integral errors
+        error_phi_integral = error_phi_integral + error_phi * dt;
+        error_theta_integral = error_theta_integral + error_theta * dt;
+        error_psi_integral = error_psi_integral + error_theta * dt;
+        
+        %differential errors
+        error_psi_differential = (error_psi - ERROR_PSI(i-1))/dt;
+        
+        Mx = kx * error_phi + kix * error_phi_integral;
+        My = ky * error_theta + kiy*error_theta_integral;
+        Mz = kz * error_psi + kiz * error_psi_integral + kdz * error_psi_differential;
+%         My = 10;
+%         Mz = 10;
+        ERROR_PSI(i) = error_psi;
+        ERROR_THETA(i) = error_theta;
+    else
+        Mx = 0;
+        My = 0;
+        Mz = 0;
+    end
+    
+    
+    
+    %updating the states (the angular rates)
+    d_p = Mx/Ixx;
+    d_q = My/Iyy;
+    d_r = Mz/Izz;
+    
+    %convert to rates of psi,theta,phi (taken from Nelson's book on flight
+    %mechanics)
+    euler_rates = [1,sin(phi)*tan(theta),cos(phi)*tan(theta);...
+        0, cos(phi), -sin(phi);...
+        0, sin(phi)/cos(theta),cos(phi)/cos(theta)]*[d_p,d_q,d_r]';
+    
+    d_phi = euler_rates(1);
+    d_theta = euler_rates(2);
+    d_psi = euler_rates(3);
+    
+    phi = phi + d_phi * dt;
+    theta = theta + d_theta * dt;
+    psi = psi + d_psi * dt;
+    
+    THETA(i) = theta;
+    PHI(i) = phi;
+    PSI(i) = psi;
+    
     
     %% This part is for animation only
     cla
     %plotting trajectories
-    fh = plot3(X_target(:,1),X_target(:,2),X_target(:,3));
-    hold on
-    plot3(X_orbit(:,1),X_orbit(:,2),X_orbit(:,3));
-    plot3(X_target(i,1),X_target(i,2),X_target(i,3),'bo','MarkerSize',8,'MarkerFaceColor','b')
+%     fh = plot3(X_target(:,1),X_target(:,2),X_target(:,3));
+%     hold on
+%     plot3(X_orbit(:,1),X_orbit(:,2),X_orbit(:,3));
+%     plot3(X_target(i,1),X_target(i,2),X_target(i,3),'bo','MarkerSize',8,'MarkerFaceColor','b')
 % %     plot3(X_orbit(i,1),X_orbit(i,2),X_orbit(i,3),'ro','MarkerSize',8,'MarkerFaceColor','r')
 
     %plotting lines
     line([X_orbit(i,1),X_target(i,1)],[X_orbit(i,2),X_target(i,2)],[X_orbit(i,3),X_target(i,3)],'Color','green')
-%     line([0,x_rel_global(1)],[0,x_rel_global(2)],[0,x_rel_global(3)],'Color','m')
+    line([0,x_rel_global(1)],[0,x_rel_global(2)],[0,x_rel_global(3)],'Color','m')
     a = [1500,0 0]';
-    A = rotation(phi,theta,psi)*a;
-    line([X_orbit(i,1),X_orbit(i,1)+A(1)],[X_orbit(i,2),X_orbit(i,2)+A(2)],[X_orbit(i,3),X_orbit(i,3)+A(3)],'Color','black')
+    A = rotation(phi_desired,theta_desired,psi_desired)*a;
+%     line([X_orbit(i,1),X_orbit(i,1)+A(1)],[X_orbit(i,2),X_orbit(i,2)+A(2)],[X_orbit(i,3),X_orbit(i,3)+A(3)],'Color','black')
+    B = rotation(phi,theta,psi)*a;
+    line([0,B(1)],[0,B(2)],[0,B(3)],'Color','black')
     
     %plotting rigid bodies
-    [X,Y,Z] = getTriangleVertices(X_orbit(i,:),[phi,theta,psi]);
-    patch(X,Y,Z,'red')
-%     [X,Y,Z] = getTriangleVertices(X_orbit(i,:)*0,[phi,theta,psi]);
-%     patch(X,Y,Z,'blue')
-%     [X,Y,Z] = getTriangleVertices(X_orbit(i,:)*0,[phi,-0.8913,2.4438]);
-%     patch(X,Y,Z,'green')
-
-
+%     [X,Y,Z] = getTriangleVertices(X_orbit(i,:),[phi_desired,theta_desired,psi_desired]);
+%     patch(X,Y,Z,'red')
+%     [X,Y,Z] = getTriangleVertices(X_orbit(i,:),[phi,theta,psi]);
+%     patch(X,Y,Z,'magenta')
+    [X,Y,Z] = getTriangleVertices(X_orbit(i,:)*0,[phi,theta,psi]);
+    patch(X,Y,Z,'blue') %reference object at origin that rotates the same way as the rigid body
+    [X,Y,Z] = getTriangleVertices(X_orbit(i,:)*0,[phi_desired,theta_desired,psi_desired]);
+    patch(X,Y,Z,'red') %reference object at origin that rotates the same way as the rigid body
+    
     xlabel('X_0')
     ylabel('Y_0')
     zlabel('Z_0')
-%     axis([-1 1 -1 1 -1 1]*500)
+    axis([-1 1 -1 1 -1 1]*500)
 %     view(0,90)
     drawnow
 %     pause(.1)
@@ -112,7 +215,6 @@ end
 %this function follows a Z-Y-X rotation
 %this function rotates from local to global (?)
 function Rt = rotation(phi,theta,psi) 
-% theta = -theta;
 Rx = [1 0 0;0 cos(phi) -sin(phi); 0 sin(phi) cos(phi)];
 Ry = [cos(theta) 0 sin(theta); 0 1 0; -sin(theta) 0 cos(theta) ];
 Rz = [cos(psi) -sin(psi) 0; sin(psi) cos(psi) 0; 0 0 1];
