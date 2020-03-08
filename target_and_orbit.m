@@ -107,7 +107,7 @@ for i = 1:2000 %which is the number of steps we want
     
     zeta_l * 180/pi;
     
-    ky = 500.0*0;
+    ky = 500.00;
     kiy = 0;
     
     kz = 235;
@@ -186,17 +186,18 @@ for i = 1:2000 %which is the number of steps we want
         psi = psi + 2*pi;
     end
     
-%     if psi > pi
-%         psi = psi - pi;
-%     elseif psi < -pi
-%         psi = psi + pi;
-%     end
+    if psi > 0
+        if psi > pi
+            psi = psi - 2*pi;
+        end
+    end
     
     if psi < 0
         if psi < -pi
             psi = psi + 2*pi;
         end
     end
+    
     THETA(i) = theta;
     PHI(i) = phi;
     PSI(i) = psi;
@@ -205,36 +206,36 @@ for i = 1:2000 %which is the number of steps we want
     %% This part is for animation only
     cla
     %plotting trajectories
-%     fh = plot3(X_target(:,1),X_target(:,2),X_target(:,3));
-%     hold on
-%     plot3(X_orbit(:,1),X_orbit(:,2),X_orbit(:,3));
-%     plot3(X_target(i,1),X_target(i,2),X_target(i,3),'bo','MarkerSize',8,'MarkerFaceColor','b')
-% %     plot3(X_orbit(i,1),X_orbit(i,2),X_orbit(i,3),'ro','MarkerSize',8,'MarkerFaceColor','r')
+    fh = plot3(X_target(:,1),X_target(:,2),X_target(:,3));
+    hold on
+    plot3(X_orbit(:,1),X_orbit(:,2),X_orbit(:,3));
+    plot3(X_target(i,1),X_target(i,2),X_target(i,3),'bo','MarkerSize',8,'MarkerFaceColor','b')
+%     plot3(X_orbit(i,1),X_orbit(i,2),X_orbit(i,3),'ro','MarkerSize',8,'MarkerFaceColor','r')
 
     %plotting lines
     line([X_orbit(i,1),X_target(i,1)],[X_orbit(i,2),X_target(i,2)],[X_orbit(i,3),X_target(i,3)],'Color','green')
-    line([0,x_rel_global(1)],[0,x_rel_global(2)],[0,x_rel_global(3)],'Color','m')
+%     line([0,x_rel_global(1)],[0,x_rel_global(2)],[0,x_rel_global(3)],'Color','m') %a line that representes the relative vector between sat and target in global axes
     a = [1500,0 0]';
     A = rotation(phi_desired,theta_desired,psi_desired)*a;
-%     line([X_orbit(i,1),X_orbit(i,1)+A(1)],[X_orbit(i,2),X_orbit(i,2)+A(2)],[X_orbit(i,3),X_orbit(i,3)+A(3)],'Color','black')
-    B = rotation(phi,theta,psi)*a;
-    line([0,B(1)],[0,B(2)],[0,B(3)],'Color','black')
+    line([X_orbit(i,1),X_orbit(i,1)+A(1)],[X_orbit(i,2),X_orbit(i,2)+A(2)],[X_orbit(i,3),X_orbit(i,3)+A(3)],'Color','black') %extension of the x axis of the satellite towards the target
+%     B = rotation(phi,theta,psi)*a;
+%     line([0,B(1)],[0,B(2)],[0,B(3)],'Color','black')
     
     %plotting rigid bodies
-%     [X,Y,Z] = getTriangleVertices(X_orbit(i,:),[phi_desired,theta_desired,psi_desired]);
-%     patch(X,Y,Z,'red')
-%     [X,Y,Z] = getTriangleVertices(X_orbit(i,:),[phi,theta,psi]);
-%     patch(X,Y,Z,'magenta')
-    [X,Y,Z] = getTriangleVertices(X_orbit(i,:)*0,[phi,theta,psi]);
-    patch(X,Y,Z,'blue') %reference object at origin that rotates the same way as the rigid body
-    [X,Y,Z] = getTriangleVertices(X_orbit(i,:)*0,[phi_desired,theta_desired,psi_desired]);
-    patch(X,Y,Z,'red') %reference object at origin that rotates the same way as the rigid body
+    [X,Y,Z] = getTriangleVertices(X_orbit(i,:),[phi_desired,theta_desired,psi_desired]);
+    patch(X,Y,Z,'red')
+    [X,Y,Z] = getTriangleVertices(X_orbit(i,:),[phi,theta,psi]);
+    patch(X,Y,Z,'magenta')
+%     [X,Y,Z] = getTriangleVertices(X_orbit(i,:)*0,[phi,theta,psi]);
+%     patch(X,Y,Z,'blue') %reference object at origin that rotates the same way as the rigid body in actual configuration
+%     [X,Y,Z] = getTriangleVertices(X_orbit(i,:)*0,[phi_desired,theta_desired,psi_desired]);
+%     patch(X,Y,Z,'red') %reference object at origin that rotates the same way as the rigid body in desired configuration
     
     xlabel('X_0')
     ylabel('Y_0')
     zlabel('Z_0')
-    axis([-1 1 -1 1 -1 1]*500)
-    view(0,90)
+%     axis([-1 1 -1 1 -1 1]*500)
+%     view(0,90)
     drawnow
 %     pause(.1)
 end

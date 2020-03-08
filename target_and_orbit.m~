@@ -107,7 +107,7 @@ for i = 1:2000 %which is the number of steps we want
     
     zeta_l * 180/pi;
     
-    ky = 500.0*0;
+    ky = 500.00;
     kiy = 0;
     
     kz = 235;
@@ -186,9 +186,17 @@ for i = 1:2000 %which is the number of steps we want
         psi = psi + 2*pi;
     end
     
-    if psi > pi
-        psi = psi - p
+    if psi > 0
+        if psi > pi
+            psi = psi - 2*pi;
+        end
+    end
     
+    if psi < 0
+        if psi < -pi
+            psi = psi + 2*pi;
+        end
+    end
     
     THETA(i) = theta;
     PHI(i) = phi;
@@ -214,20 +222,20 @@ for i = 1:2000 %which is the number of steps we want
     line([0,B(1)],[0,B(2)],[0,B(3)],'Color','black')
     
     %plotting rigid bodies
-%     [X,Y,Z] = getTriangleVertices(X_orbit(i,:),[phi_desired,theta_desired,psi_desired]);
-%     patch(X,Y,Z,'red')
-%     [X,Y,Z] = getTriangleVertices(X_orbit(i,:),[phi,theta,psi]);
-%     patch(X,Y,Z,'magenta')
-    [X,Y,Z] = getTriangleVertices(X_orbit(i,:)*0,[phi,theta,psi]);
-    patch(X,Y,Z,'blue') %reference object at origin that rotates the same way as the rigid body
-    [X,Y,Z] = getTriangleVertices(X_orbit(i,:)*0,[phi_desired,theta_desired,psi_desired]);
-    patch(X,Y,Z,'red') %reference object at origin that rotates the same way as the rigid body
+    [X,Y,Z] = getTriangleVertices(X_orbit(i,:),[phi_desired,theta_desired,psi_desired]);
+    patch(X,Y,Z,'red')
+    [X,Y,Z] = getTriangleVertices(X_orbit(i,:),[phi,theta,psi]);
+    patch(X,Y,Z,'magenta')
+%     [X,Y,Z] = getTriangleVertices(X_orbit(i,:)*0,[phi,theta,psi]);
+%     patch(X,Y,Z,'blue') %reference object at origin that rotates the same way as the rigid body in actual configuration
+%     [X,Y,Z] = getTriangleVertices(X_orbit(i,:)*0,[phi_desired,theta_desired,psi_desired]);
+%     patch(X,Y,Z,'red') %reference object at origin that rotates the same way as the rigid body in desired configuration
     
     xlabel('X_0')
     ylabel('Y_0')
     zlabel('Z_0')
     axis([-1 1 -1 1 -1 1]*500)
-    view(0,90)
+%     view(0,90)
     drawnow
 %     pause(.1)
 end
